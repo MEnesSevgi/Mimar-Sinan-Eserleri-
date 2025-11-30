@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Mimar Sinan Eserleri</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mimar Sinan'ın Temel Eserleri Haritası</title>
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+    />
+    <style>
+        /* Ana düzeni ve responsive stilleri korundu */
+        html, body {
+            margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: row;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1100;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+            font-size: 16px;
+            max-width: 300px;
+        }
+        #map, #wiki {
+            height: 100vh;
+            width: 50vw;
+            box-sizing: border-box;
+        }
+        #map {
+            border-right: 2px solid #ccc;
+        }
+        #wiki iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        select {
+            width: 100%;
+            font-size: 16px;
+            margin-top: 8px;
+            padding: 4px;
+        }
+        /* Responsive ayarlar */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            #controls {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                box-sizing: border-box;
+                border-radius: 0;
+                padding: 10px 15px;
+                text-align: center;
+                font-size: 14px;
+                z-index: 1200;
+                max-width: none;
+            }
+            #map, #wiki {
+                width: 100vw;
+                /* Kontrollerin kapladığı alanı harita ve wiki arasında paylaştır */
+                height: calc(50vh - 25px); 
+            }
+            #map {
+                border-right: none;
+                border-bottom: 2px solid #ccc;
+                margin-top: 50px; /* Kontroller için boşluk */
+            }
+            #wiki {
+                 height: calc(50vh - 25px); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        Mimar Sinan'ın 100 Eseri Haritası & Wikipedia Entegresi <br>
+        <select id="workSelect">
+            <option value="">-- Bir eser seçin --</option>
+        </select>
+    </div>
+
+    <div id="map"></div>
+    <div id="wiki">
+        <iframe
+            id="wikiFrame"
+            src="https://tr.wikipedia.org/wiki/Mimar_Sinan%27%C4%B1n_eserleri_listesi"
+            title="Wikipedia"
+            sandbox="allow-same-origin allow-scripts allow-popups"
+        ></iframe>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        // Mimar Sinan'ın en önemli eserleri listesi
+        const mimarSinanWorks = [
+         { "name": "Odabaşı Camii", "city": "İstanbul", "lat": 41.0121861, "lng": 28.9311422, "wikiPage": "Odabaşı_Camii" },
+{ "name": "Ferruh Kethüda Camii", "city": "İstanbul", "lat": 41.034515, "lng": 28.945734, "wikiPage": "Ferruh_Kethüda_Camii" },
+
+{ "name": "Kazasker İvaz Efendi Camii", "city": "İstanbul", "lat": 41.038151, "lng": 28.940933, "wikiPage": "Kazasker_İvaz_Efendi_Camii" },
+{ "name": "Kılıç Ali Paşa Camii, Medresesi, Külliyesi", "city": "İstanbul", "lat": 41.026421, "lng": 28.980836, "wikiPage": "Kılıç_Ali_Paşa_Camii" },
+{ "name": "Ebü’l-Fazl Camii ", "city": "İstanbul", "lat": 41.028628, "lng": 28.982069, "wikiPage": "Ebulfazl_Camii" },
+{ "name": "Sinan Paşa Camii", "city": "İstanbul", "lat": 41.042238, "lng": 29.006276, "wikiPage": "Sinan_Paşa_Camii_(Beşiktaş)" },
+{ "name": "Ferhad Paşa Camii", "city": "İstanbul", "lat": 41.140689, "lng": 28.459629, "wikiPage": "Ferhad_Paşa_Camii_(Çatalca)" },
+{ "name": "Drağman Yunus Camii", "city": "İstanbul", "lat": 41.028914, "lng": 28.944001, "wikiPage": "Drağman_Yunus_Camii" },
+{ "name": "Gazi Ahmet Paşa Camii", "city": "İstanbul", "lat": 41.021021, "lng": 28.929274, "wikiPage": "Gazi_Ahmet_Paşa_Camii" },
+{ "name": "Hadım İbrahim Paşa Camisi ve Külliyesi", "city": "İstanbul", "lat": 41.00598, "lng": 28.92271, "wikiPage": "Hadım_İbrahim_Paşa_Camii" },
+{ "name": "Behram Paşa Camii", "city": "Diyarbakır", "lat": 37.909378, "lng": 40.234114, "wikiPage": "Behram_Paşa_Camii" },
+{ "name": "Molla Çelebi Camii", "city": "İstanbul", "lat": 41.032207, "lng": 28.9904709, "wikiPage": "Molla_Çelebi_Camii" },
+{ "name": "Piyale Paşa Camii", "city": "İstanbul", "lat": 41.044534, "lng": 28.965935, "wikiPage": "Piyale_Paşa_Camii" },
+{ "name": "Selimiye Camii", "city": "Edirne", "lat": 41.678111, "lng": 26.559155, "wikiPage": "Selimiye_Camii" },
+
+{ "name": "Çavuşbaşı Camii", "city": "İstanbul", "lat": 41.049031, "lng": 28.941498, "wikiPage": "Çavuşbaşı_Camii" },
+{ "name": "İskender Paşa Camii", "city": "İstanbul", "lat": 41.099962, "lng": 29.065955, "wikiPage": "İskenderpaşa_Camii_(Beykoz)" },
+{ "name": "Şah Sultan Camii", "city": "İstanbul", "lat": 41.053479, "lng": 28.93583, "wikiPage": "Şah_Sultan_Camii_(Eyüpsultan)" },
+{ "name": "Şehzade Cihangir Camii", "city": "İstanbul", "lat": 41.030146, "lng": 28.987103, "wikiPage": "Şehzade_Cihangir_Camii" },
+{ "name": "Şemsi Paşa Camii, ve Külliyesi", "city": "İstanbul", "lat": 41.025931, "lng": 29.011414, "wikiPage": "Şemsi_Paşa_Camii" },
+
+
+
+{ "name": "Kasım Paşa Camii", "city": "İstanbul", "lat": 41.032872, "lng": 28.968267, "wikiPage": "Kasım_Paşa_Camii" },
+{ "name": "Pertev Paşa Camii", "city": "Kocaeli", "lat": 40.762705, "lng": 29.931038, "wikiPage": "Pertev_Paşa_Camii" },
+
+
+{ "name": "Fevziye Camii", "city": "Kocaeli", "lat": 40.76266, "lng": 29.925622, "wikiPage": "Fevziye_Camii" },
+{ "name": "Lala Mustafa Paşa Camii", "city": "Erzurum", "lat": 39.90636, "lng": 41.2731906, "wikiPage": "Lala_Mustafa_Paşa_Camii_(Erzurum)" },
+{ "name": "Muradiye Camii", "city": "Manisa", "lat": 38.610535, "lng": 27.4281874, "wikiPage": "Muradiye_Camii_(Manisa)" },
+{ "name": "Kütahya Ulu Camii (tamiri)", "city": "Kütahya", "lat": 39.417222, "lng": 29.975833, "wikiPage": "Kütahya_Ulu_Camii" },
+{ "name": "Taşlık Camii", "city": "Edirne", "lat": 41.675902, "lng": 26.56426, "wikiPage": "Taşlık_Camii" },
+{ "name": "Defterdar Mustafa Paşa Camii", "city": "Edirne", "lat": 41.672658, "lng": 26.561513, "wikiPage": "Defterdar_Mustafa_Paşa_Camii" },
+{ "name": "Cedid Ali Paşa Camii", "city": "Kırklareli", "lat": 41.427948, "lng": 27.096906, "wikiPage": "Semiz_Ali_Paşa_Camii" },
+{ "name": "Muradiye Camii (Avlonya)", "city": "Avlonya", "lat": 40.469083, "lng": 19.490914, "wikiPage": "Muradiye_Camii_(Avlonya)" },
+{ "name": "Çoban Mustafa Paşa Külliyesi", "city": "Kocaeli", "lat": 40.799747, "lng": 29.431511, "wikiPage": "Çoban_Mustafa_Paşa_Külliyesi" },
+{ "name": "Haseki Hürrem Sultan Külliyesi", "city": "İstanbul", "lat": 41.008634, "lng": 28.941732, "wikiPage": "Haseki Sultan Camii" },
+{ "name": "Sokollu Mehmed Paşa Külliyesi", "city": "İstanbul", "lat": 41.004749, "lng": 28.972209, "wikiPage": "Sokollu_Mehmed_Paşa_Külliyesi" },
+{ "name": "Atik Valide Nurbanu Sultan Külliyesi", "city": "İstanbul", "lat": 41.018796, "lng": 29.023843, "wikiPage": "Eski_Valide_Camii" },
+{ "name": "Gazi İskender Paşa Külliyesi", "city": "İstanbul", "lat": 41.099962, "lng": 29.065955, "wikiPage": "İskenderpaşa_Camii_(Beykoz)" },
+
+{ "name": "Kara Ahmet Paşa Külliyesi", "city": "İstanbul", "lat": 41.021021, "lng": 28.929274, "wikiPage": "Kara_Ahmet_Paşa_Külliyesi" },
+
+{ "name": "Mehmed Ağa Külliyesi", "city": "İstanbul", "lat": 41.0268959, "lng": 28.9453487, "wikiPage": "Mehmed_Ağa_Camii" },
+{ "name": "Mihrimah Sultan Külliyesi", "city": "İstanbul", "lat": 41.029225, "lng": 28.935769, "wikiPage": "Mihrimah_Sultan_Camii_(Edirnekapı)" },
+
+{ "name": "Süleymaniye Külliyesi", "city": "İstanbul", "lat": 41.016047, "lng": 28.963971, "wikiPage": "Süleymaniye_Külliyesi" },
+{ "name": "Şehzadebaşı Külliyesi", "city": "İstanbul", "lat": 41.014145, "lng": 28.956311, "wikiPage": "Şehzadebaşı_Camii" },
+
+{ "name": "Zal Mahmut Paşa Camii ve Külliyesi", "city": "İstanbul", "lat": 41.044767, "lng": 28.936129, "wikiPage": "Zal_Mahmut_Paşa_Camii" },
+{ "name": "Selimiye Külliyesi", "city": "Edirne", "lat": 41.678111, "lng": 26.559155, "wikiPage": "Selimiye_Külliyesi" },
+
+
+
+
+
+{ "name": "Süleymaniye Hamamı", "city": "İstanbul", "lat": 41.015818, "lng": 28.965641, "wikiPage": "Süleymaniye_Hamamı" },
+{ "name": "Haseki Sultan Hamamı", "city": "İstanbul", "lat": 41.0069961, "lng": 28.9788446, "wikiPage": "Haseki_Hamamı" },
+{ "name": "Mihrimah Sultan Hamamı", "city": "İstanbul", "lat": 41.028889, "lng": 28.936667, "wikiPage": "Mihrimah_Sultan_Hamamı" },
+{ "name": "Beykoz Hamamı", "city": "İstanbul", "lat": 41.134562, "lng": 29.091946, "wikiPage": "Beykoz_Hamamı" },
+{ "name": "Büyük Hamam", "city": "İstanbul", "lat": 41.033041, "lng": 28.96802, "wikiPage": "Büyük_Hamam_(Kasımpaşa)" },
+{ "name": "Zeyrek Çinili Hamam", "city": "İstanbul", "lat": 41.018208, "lng": 28.956432, "wikiPage": "Zeyrek_Çinili_Hamam" },
+{ "name": "Büyükçekmece Kervansarayı", "city": "İstanbul", "lat": 41.021945, "lng": 28.575929, "wikiPage": "Büyükçekmece_Kervansarayı" },
+
+{ "name": "Rüstem Paşa Kervansarayı", "city": "Edirne", "lat": 41.675937, "lng": 26.555903, "wikiPage": "Rüstem_Paşa_Kervansarayı_(Edirne)" },
+{ "name": "Kanuni Sultan Süleyman Osijek Köprüsü", "city": "Osijek", "lat": 45.5634054, "lng": 18.6936042, "wikiPage": "Kanuni_Sultan_Süleyman_Köprüsü_(Osijek)" },
+{ "name": "Kanuni Sultan Süleyman Büyükçekmece Köprüsü", "city": "İstanbul", "lat": 41.021915, "lng": 28.570592, "wikiPage": "Kanuni Sultan Süleyman Köprüsü" },
+{ "name": "Mustafa Paşa Svilengrad Köprüsü", "city": "Svilengrad", "lat": 41.768748, "lng": 26.193664, "wikiPage": "Mustafa_Paşa_Köprüsü" },
+{ "name": "Kapı Ağa (Haramidere) Köprüsü", "city": "İstanbul", "lat": 41.005998, "lng": 28.678012, "wikiPage": "Harâmidere Köprüsü" },
+{ "name": "Alpullu (Sinanlı) Köprüsü", "city": "Kırklareli", "lat": 41.3643915, "lng": 27.1419279, "wikiPage": "Alpullu_Köprüsü" },
+{ "name": "Sokullu Mehmet Paşa Köprüsü(Drina Köprüsü, Vişegrad)", "city": "Vişegrad", "lat": 43.782316, "lng": 19.288102, "wikiPage": "Sokullu Mehmed Paşa Köprüsü (Vişegrad)" },
+{ "name": "Arslanağa Trebinje Köprüsü", "city": "Trebinje", "lat": 42.714696, "lng": 18.353976, "wikiPage": "Arslanağa_Köprüsü" },
+{ "name": "Sokullu Mehmed Paşa Köprüsü", "city": "Kırklareli", "lat": 41.407834, "lng": 27.345505, "wikiPage": "Sokullu Mehmed Paşa Köprüsü (Lüleburgaz)" },
+{ "name": "Kanuni Sultan Süleyman Köprüsü(Saray Köprüsü)", "city": "Edirne", "lat": 41.68716, "lng": 26.558669, "wikiPage": "Kanuni Köprüsü" },
+
+
+{ "name": "Sokullu Mehmed Paşa Medresesi(Kadırga)", "city": "İstanbul", "lat": 41.004749, "lng": 28.972209, "wikiPage": "Sokollu Mehmed Paşa Külliyesi" },
+
+
+
+{ "name": "Nişancı Mehmed Paşa Camii ve Medresesi", "city": "İstanbul", "lat": 41.006126, "lng": 28.960873, "wikiPage": "Nişancı Mehmed Paşa Camii" },
+
+
+{ "name": "Kepenekçi Sinan Medresesi", "city": "İstanbul", "lat": 41.018134, "lng": 28.965494, "wikiPage": "Kepenekçi_Sinan_Medresesi" },
+
+{ "name": "Uzun Kemer", "city": "İstanbul", "lat": 41.171207, "lng": 28.902693, "wikiPage": "Uzun_Kemer" },
+{ "name": "Mağlova Kemeri", "city": "İstanbul", "lat": 41.137119, "lng": 28.893533, "wikiPage": "Mağlova_Kemeri" },
+{ "name": "Gözlüce Kemeri", "city": "İstanbul", "lat": 41.12211, "lng": 28.898933, "wikiPage": "Gözlüce_Kemeri" },
+{ "name": "Kırık Kemer", "city": "İstanbul", "lat": 41.1472667, "lng": 28.9219419, "wikiPage": "Kırık_Kemer" },
+{ "name": "Yahya Efendi Türbesi", "city": "İstanbul", "lat": 41.046027, "lng": 29.017364, "wikiPage": "Yahya_Efendi_Türbesi" },
+{ "name": "Barbaros Hayreddin Paşa Türbesi", "city": "İstanbul", "lat": 41.041869, "lng": 29.006886, "wikiPage": "Barbaros_Hayreddin_Paşa_Türbesi" },
+
+
+
+{ "name": "Nişancı Mehmet Paşa Camii", "city": "İstanbul", "lat": 41.02418, "lng": 28.94479, "wikiPage": "Nişancı_Mehmet_Paşa_Camii" },
+{ "name": "Sokollu Mehmed Paşa Camii", "city": "Kırklareli", "lat": 41.40782, "lng": 27.35108, "wikiPage": "Sokollu_Mehmed_Paşa_Camii" },
+{ "name": "Banyabaşı Camii", "city": "Sofya", "lat": 42.69954, "lng": 23.32255, "wikiPage": "Banyabaşı_Camii" },
+{ "name": "Sofya Kara(Derviş Mehmed Paşa) Külliyesi", "city": "Sofya", "lat": 42.6898747, "lng": 23.3274527, "wikiPage": "Yedi_Azizler_Kilisesi" },
+
+{ "name": "Mer'aşi Abdurrahman Paşa Camii", "city": "Hatay", "lat": 41.01864, "lng": 34.03877, "wikiPage": "Mer'aşi_Abdurrahman_Paşa_Camii" },
+
+{ "name": "Dukaginzâde Mehmet Paşa Camii", "city": "Halep", "lat": 36.197522, "lng": 37.1577093, "wikiPage": "Dukaginzâde_Mehmet_Paşa_Camii" },
+          { "name": "Mihrimah Sultan Camii", "city": "İstanbul", "lat": 41.026667, "lng": 29.016111, "wikiPage": "Mihrimah_Sultan_Camii_(%C3%9Csk%C3%BCdar)" },
+          
+          
+          
+           { "name": "Hüsreviye Medresesi(Halep)", "city": "Halep", "lat": 36.1970461601633, "lng": 37.16080286706624, "wikiPage": "Hüsreviye Camii" }, 
+           { "name": "Ayas Paşa Türbesi ", "city": "İstanbul", "lat": 41.0478904777964, "lng": 28.9347327957613, "wikiPage": "Ayas Mehmed Paşa" },
+          { "name": "Siyavuşpaşa Kasrı", "city": "İstanbul", "lat": 41.00061384206979, "lng": 28.85140083269671, "wikiPage": "Siyavuşpaşa Kasrı" },
+          { "name": "Hacı Evhadüddin Camii", "city": "İstanbul", "lat": 40.99674537413793, "lng": 28.92393978863862, "wikiPage": "Hacı Evhadüddin Camii" },
+            { "name": "Kanuni Sultan Süleyman Çeşmesi", "city": "İstanbul", "lat": 41.022450255856526, "lng": 28.576050348228623, "wikiPage": "Kanuni Sultan Süleyman Çeşmesi" },
+           { "name": "Rüstem Paşa Medresesi(Fatih)", "city": "İstanbul", "lat": 41.013148, "lng": 28.972432, "wikiPage": "Rüstem Paşa Medresesi (İstanbul)" },
+            { "name": "Rüstem Paşa Camii", "city": "İstanbul", "lat": 41.0175738002952, "lng": 28.968825998530807, "wikiPage": "Rüstem Paşa Camii" },
+           { "name": "Mimar Sinan Türbesi", "city": "İstanbul", "lat": 41.01729895240761, "lng": 28.963829037727596, "wikiPage": "Mimar Sinan" },
+             { "name": "Beyaz Kule", "city": "Selanik", "lat": 40.62644661458256, "lng": 22.948372086927296, "wikiPage": "Beyaz Kule" },
+           { "name": "Küçükçekmece Taş Köprü", "city": "İstanbul", "lat": 40.98929710931652, "lng": 28.770068438434038, "wikiPage": "Küçükçekmece Köprüsü" }, 
+           { "name": "Şam Süleymaniye Külliyesi", "city": "Şam", "lat": 33.51225230384923, "lng": 36.29138791913692, "wikiPage": "Süleymaniye Külliyesi (Şam)" }, 
+            { "name": "Rüstem Paşa Kervansarayı(Erzurum)", "city": "Erzurum", "lat": 39.908659332619, "lng": 41.2737996418222, "wikiPage": "Rüstem Paşa Kervansarayı (Erzurum)" }, 
+           { "name": "Bender Kalesi (yeniden inşaası)", "city": "Bender", "lat": 46.833771022531195, "lng": 29.48789612610398, "wikiPage": "Bender" }, 
+           { "name": "Kurşunlu Cami(Kayseri)", "city": "Kayseri", "lat": 38.72208094875581, "lng": 35.48514916014106, "wikiPage": "Kurşunlu Cami (Kayseri)" }, 
+          { "name": "Çemberlitaş Hamamı", "city": "İstanbul", "lat": 41.008532929368556, "lng": 28.971598722661444 , "wikiPage": "Çemberlitaş Hamamı" }, 
+           
+           { "name": "Cenabi Ahmed Paşa Camii", "city": "Ankara", "lat": 39.93691570659912, "lng": 32.87051912051605 , "wikiPage": "Cenabi Ahmed Paşa Camii" }, 
+          { "name": "Karagöz Bey Camii", "city": "Mostar", "lat": 43.34133467402672, "lng":17.813877203083667 , "wikiPage": "Karagöz Bey Camii" }, 
+          { "name": "Caferağa Medresesi", "city": "İstanbul", "lat": 41.00967131597726, "lng":28.9791704621754 , "wikiPage": "Caferağa Medresesi" }, 
+           { "name": "Adalet Kasrı", "city": "Edirne", "lat": 41.68987751181697, "lng":26.55649277886841  , "wikiPage": "Adalet Kasrı" }, 
+           { "name": "Mesih Mehmed Paşa Külliyesi", "city": "İstanbul", "lat": 41.02188471909966, "lng":28.943730194928396 , "wikiPage": "Mesih Mehmed Paşa Camii" }, 
+            { "name": "Rüstem Paşa Kervansarayı(Konya)", "city": "Konya", "lat": 37.51636070917903, "lng":34.05057258208265  , "wikiPage": "Rüstem Paşa Kervansarayı (Konya)" }, 
+          { "name": "Tekirdağ Tarihi Rüstem Paşa Çarşısı", "city": "Tekirdağ", "lat": 40.97756136305323, "lng":27.515922007935366  , "wikiPage": "Bedesten" }, 
+          { "name": "Mimar Sinan Mescidi", "city": "İstanbul", "lat": 41.019569677641876, "lng":28.94068885925187  , "wikiPage": "Mimar Sinan Mescidi" }, 
+            { "name": "Çukurcuma Camii", "city": "İstanbul", "lat": 41.03202863703821, "lng":28.98098858664025  , "wikiPage": "Çukurcuma Camii" }, 
+           { "name": "Osman Şah Camii", "city": "Tırhala", "lat": 39.55004407472706, "lng":21.77107607133747   , "wikiPage": "Osman Şah Camii" }, 
+            { "name": "Ramazan Efendi Camii", "city": "İstanbul", "lat": 41.00489625203086, "lng":28.931503175457678    , "wikiPage": "Ramazan Efendi Camii" }, 
+           { "name": "Melek Ahmed Paşa Camii", "city": "Diyarbakır", "lat": 37.91088524810547, "lng":40.2302796090066    , "wikiPage": "Melek Ahmed Paşa Camii" }, 
+       
+    
+        ];
+
+        // Haritayı başlat
+        const map = L.map('map').setView([39.933333, 32.859444], 6);
+
+        // OpenStreetMap katmanı
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıcıları'
+        }).addTo(map);
+
+        let markers = [];
+        const workSelect = document.getElementById('workSelect');
+
+        function showWikiPage(wikiPageName) {
+            const wikiUrl = `https://tr.wikipedia.org/wiki/${wikiPageName}`;
+            document.getElementById('wikiFrame').src = wikiUrl;
+        }
+
+        function addMarkers() {
+            const validWorks = mimarSinanWorks.filter(work => work.lat && work.lng);
+
+            validWorks.forEach((work, index) => {
+                const marker = L.marker([work.lat, work.lng]).addTo(map);
+
+                const popupContent = `
+                    <b>${work.name}</b><br>
+                    Şehir: ${work.city}<br>
+                    <a href="${work.wikiPage ? `https://tr.wikipedia.org/wiki/${work.wikiPage}` : '#'}" target="_blank">Wikipedia Sayfası</a>
+                `;
+
+                marker.bindPopup(popupContent);
+
+                marker.on('click', () => {
+                    if (work.wikiPage) {
+                        showWikiPage(work.wikiPage);
+                    }
+                    // Seçimde de güncelle
+                    workSelect.value = index;
+                });
+
+                markers.push(marker);
+
+                // Select'e seçenek ekle
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = work.name;
+                workSelect.appendChild(option);
+            });
+
+            if (validWorks.length > 0) {
+                const bounds = validWorks.map(w => [w.lat, w.lng]);
+                map.fitBounds(L.latLngBounds(bounds).pad(0.1));
+            }
+        }
+
+        // Select değiştiğinde yapılacaklar
+        workSelect.addEventListener('change', () => {
+            const selectedIndex = workSelect.value;
+            if (selectedIndex === "") {
+                // Hiçbir şey seçilmedi, tüm haritayı göster
+                const validWorks = mimarSinanWorks.filter(work => work.lat && work.lng);
+                if (validWorks.length > 0) {
+                    const bounds = validWorks.map(w => [w.lat, w.lng]);
+                    map.fitBounds(L.latLngBounds(bounds).pad(0.1));
+                }
+                document.getElementById('wikiFrame').src = "https://tr.wikipedia.org/wiki/Mimar_Sinan%27%C4%B1n_eserleri_listesi";
+                return;
+            }
+
+            const work = mimarSinanWorks[selectedIndex];
+            if (work && work.lat && work.lng) {
+                // Haritada o esere zoom yap
+                map.setView([work.lat, work.lng], 16);
+
+                // Popup aç
+                markers[selectedIndex].openPopup();
+
+                // Wikipedia sayfasını göster
+                if (work.wikiPage) {
+                    showWikiPage(work.wikiPage);
+                }
+            }
+        });
+
+        addMarkers();
+
+        // Başlangıçta genel listeyi yükle
+        document.getElementById('wikiFrame').src = "https://tr.wikipedia.org/wiki/Mimar_Sinan%27%C4%B1n_eserleri_listesi";
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
